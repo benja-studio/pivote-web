@@ -1,0 +1,396 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+
+/// Centralized animation configurations for consistent app-wide animations
+class AppAnimations {
+  // Animation Durations - Optimized for smooth, professional feel
+  static const Duration ultraFast = Duration(milliseconds: 100);
+  static const Duration fast = Duration(milliseconds: 200);
+  static const Duration normal = Duration(milliseconds: 300);
+  static const Duration medium = Duration(milliseconds: 350);
+  static const Duration slow = Duration(milliseconds: 500);
+  static const Duration verySlow = Duration(milliseconds: 800);
+
+  // Apple Design Physics & Curves
+  // Damping 1.0 (critically damped) default, Damping 0.8 for momentum interactions
+  static const Curve appleDefault =
+      Cubic(0.2, 0.0, 0.0, 1.0); // Apple fluid curve
+  static const Curve appleSpringEase =
+      Cubic(0.16, 1.0, 0.3, 1.0); // Critically damped feel
+  static const Curve appleSpringBouncy =
+      Cubic(0.34, 1.56, 0.64, 1.0); // Subtle overshoot
+  static const Curve appleSheetCurve =
+      Cubic(0.32, 0.72, 0.0, 1.0); // Apple modal sheet curve
+
+  // Animation Curves - Professional and smooth
+  static const Curve defaultCurve = Curves.easeInOut;
+  static const Curve bounceCurve = Curves.elasticOut;
+  static const Curve smoothCurve = Curves.easeOutCubic;
+  static const Curve sharpCurve = Curves.easeInOutCubic;
+  static const Curve modalCurve = appleSheetCurve;
+  static const Curve subtleCurve = Curves.easeInOutQuad;
+
+  // Slide Up Transition for Modals (Bottom Sheets, Dialogs) with Apple Spring feel
+  static Route<T> slideUpTransition<T>(Widget page, {Duration? duration}) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 1.0);
+        const end = Offset.zero;
+
+        var tween = Tween(begin: begin, end: end).chain(
+          CurveTween(curve: appleSheetCurve),
+        );
+
+        var offsetAnimation = animation.drive(tween);
+        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+          ),
+        );
+
+        return SlideTransition(
+          position: offsetAnimation,
+          child: FadeTransition(
+            opacity: fadeAnimation,
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: duration ?? medium,
+    );
+  }
+
+  // Smooth Fade In for elements
+  static Widget smoothFadeIn({
+    required Widget child,
+    Duration? duration,
+    Curve? curve,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: duration ?? const Duration(milliseconds: 250),
+      curve: curve ?? Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: child,
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Scale In for buttons and interactive elements
+  static Widget scaleIn({
+    required Widget child,
+    Duration? duration,
+    double? begin,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: begin ?? 0.8, end: 1.0),
+      duration: duration ?? fast,
+      curve: smoothCurve,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Pulse Animation for navigation icons
+  static Widget pulseIcon({
+    required Widget child,
+    required bool isSelected,
+    Duration? duration,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        begin: 1.0,
+        end: isSelected ? 1.15 : 1.0,
+      ),
+      duration: duration ?? const Duration(milliseconds: 200),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: child,
+        );
+      },
+      child: child,
+      onEnd: () {
+        // Return to normal size after pulse
+      },
+    );
+  }
+
+  // Scale Transition
+  static Widget scaleTransition({
+    required Animation<double> animation,
+    required Widget child,
+  }) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: animation, curve: smoothCurve),
+      ),
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+    );
+  }
+
+  // Improved Shimmer Animation with more natural motion
+  static Widget shimmer({
+    required Widget child,
+    Duration duration = const Duration(milliseconds: 2000),
+  }) {
+    return _ShimmerAnimation(
+      duration: duration,
+      child: child,
+    );
+  }
+
+  // Staggered Slide In for lists - very professional feel
+  static Widget staggeredSlideIn({
+    required int index,
+    required Widget child,
+    Duration delay = const Duration(milliseconds: 50),
+    Duration duration = const Duration(milliseconds: 500),
+  }) {
+    return _StaggeredAnimation(
+      index: index,
+      delay: delay,
+      duration: duration,
+      child: child,
+    );
+  }
+
+  // Smooth Fade and Scale In - for a more premium look
+  static Widget smoothFadeInScale({
+    required Widget child,
+    Duration? duration,
+    double beginScale = 0.95,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: duration ?? slow,
+      curve: smoothCurve,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.scale(
+            scale: beginScale + ((1 - beginScale) * value),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Improved Page Transition (iOS-like)
+  static Route<T> createRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var slideTween = Tween(begin: const Offset(1.0, 0.0), end: Offset.zero)
+            .chain(CurveTween(curve: Curves.easeOutCubic));
+
+        var fadeTween = Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+                parent: animation, curve: const Interval(0.0, 0.5)));
+
+        return SlideTransition(
+          position: animation.drive(slideTween),
+          child: FadeTransition(
+            opacity: fadeTween,
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
+  }
+
+  // Fade Route
+  static Route<T> createFadeRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      transitionDuration: fast,
+    );
+  }
+}
+
+// Internal helper for staggered animations to handle individual delays
+class _StaggeredAnimation extends StatefulWidget {
+  final int index;
+  final Widget child;
+  final Duration delay;
+  final Duration duration;
+
+  const _StaggeredAnimation({
+    required this.index,
+    required this.child,
+    required this.delay,
+    required this.duration,
+  });
+
+  @override
+  State<_StaggeredAnimation> createState() => _StaggeredAnimationState();
+}
+
+class _StaggeredAnimationState extends State<_StaggeredAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  late Animation<Offset> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+
+    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _offset = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+  }
+
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      _controller.stop();
+      _controller.value = 1;
+      return;
+    }
+    if (!_started) {
+      _started = true;
+      _startAnimation();
+    }
+  }
+
+  void _startAnimation() async {
+    final effectiveIndex = widget.index.clamp(0, 6);
+    await Future.delayed(widget.delay * effectiveIndex);
+    if (mounted) {
+      unawaited(_controller.forward());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _offset,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// Internal helper for shimmer to avoid repetitive logic
+class _ShimmerAnimation extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+
+  const _ShimmerAnimation({required this.child, required this.duration});
+
+  @override
+  State<_ShimmerAnimation> createState() => _ShimmerAnimationState();
+}
+
+class _ShimmerAnimationState extends State<_ShimmerAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  bool? _reduceMotion;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (_reduceMotion == reduceMotion) return;
+    _reduceMotion = reduceMotion;
+    if (reduceMotion) {
+      _controller
+        ..stop()
+        ..value = 0;
+    } else {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_reduceMotion == true) return widget.child;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.transparent,
+                (isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.05)),
+                Colors.transparent,
+              ],
+              stops: [
+                (_controller.value - 0.3).clamp(0.0, 1.0),
+                _controller.value.clamp(0.0, 1.0),
+                (_controller.value + 0.3).clamp(0.0, 1.0),
+              ],
+            ).createShader(bounds);
+          },
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}

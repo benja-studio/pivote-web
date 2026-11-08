@@ -1,0 +1,414 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:pivote/features/home/data/models/app_notification.dart';
+import 'package:pivote/features/home/presentation/providers/notifications_provider.dart';
+import 'package:pivote/features/profile/presentation/widgets/profile_design_system.dart';
+import 'package:pivote/features/soccer/presentation/providers/soccer_provider.dart';
+
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final soccerData = context.read<SoccerProvider>().soccerData;
+      context.read<NotificationsProvider>().refresh(soccerData: soccerData);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = ProfilePalette.of(context);
+    final notificationsProvider = context.watch<NotificationsProvider>();
+    final dynamicItems = notificationsProvider.items;
+
+    return ProfileSubsectionScaffold(
+      title: 'Notificaciones',
+      trailing: dynamicItems.any((e) => !e.isRead)
+          ? Material(
+              color: palette.card,
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  notificationsProvider.markAllAsRead();
+                },
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: palette.border, width: 1),
+                  ),
+                  child: Text(
+                    'Leídas',
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: palette.text,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
+      children: [
+        // ── Banner Principal de Estado Oficial ──
+        const SizedBox(height: 6),
+        ProfileGroupCard(
+          padding: const EdgeInsets.all(18),
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: palette.iconBox,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.rocket_launch_rounded,
+                    size: 22,
+                    color: Color(0xFF4F9BF0),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3FD1A0)
+                                  .withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'COMUNICADO OFICIAL',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                                color: const Color(0xFF239B73),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Estamos trabajando para mejorar esta app',
+                        style: GoogleFonts.inter(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                          color: palette.text,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Nuestro equipo está optimizando cada sección, mejorando la velocidad de carga y preparando nuevas funciones para vos.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          height: 1.45,
+                          color: palette.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // ── Novedades y Próximas Mejoras (Mensajes Oficiales) ──
+        const ProfileSectionTitle('Novedades y mejoras en camino'),
+        ProfileGroupCard(
+          children: [
+            _AnnouncementTile(
+              palette: palette,
+              icon: Icons.live_tv_rounded,
+              iconColor: const Color(0xFF3FD1A0),
+              badgeText: 'PRIORIDAD #1',
+              title: 'Los canales serán arreglados al 100%',
+              body:
+                  'Estamos revisando y actualizando todas las señales en vivo y enlaces M3U8 para brindarte reproducción inmediata y estabilidad total.',
+              timeLabel: 'En progreso',
+              showBottomDivider: true,
+            ),
+            _AnnouncementTile(
+              palette: palette,
+              icon: Icons.sports_soccer_rounded,
+              iconColor: const Color(0xFFF0C93A),
+              badgeText: 'DEPORTES',
+              title:
+                  'El fútbol será algo muy importante en esta app y podrás verlo todo',
+              body:
+                  'Sumaremos cobertura completa de partidos en vivo, agendas diarias actualizadas y múltiples opciones de señal para cada encuentro.',
+              timeLabel: 'Destacado',
+              showBottomDivider: true,
+            ),
+            _AnnouncementTile(
+              palette: palette,
+              icon: Icons.auto_awesome_rounded,
+              iconColor: const Color(0xFF9B6BE6),
+              badgeText: 'ACTUALIZACIÓN',
+              title: 'Pronto se desarrollarán muchas mejoras',
+              body:
+                  'Nuevo diseño unificado, reproductor más rápido, mejoras en radios y herramientas de diagnóstico avanzadas.',
+              timeLabel: 'Muy pronto',
+              showBottomDivider: false,
+            ),
+          ],
+        ),
+
+        // ── Actividad y Alertas en Vivo (si existen en NotificationsProvider) ──
+        if (dynamicItems.isNotEmpty) ...[
+          const ProfileSectionTitle('Avisos recientes'),
+          ProfileGroupCard(
+            children: [
+              for (int i = 0; i < dynamicItems.length; i++)
+                _DynamicNotificationRow(
+                  item: dynamicItems[i],
+                  palette: palette,
+                  showBottomDivider: i < dynamicItems.length - 1,
+                  onTap: () {
+                    notificationsProvider.markAsRead(dynamicItems[i].id);
+                  },
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _AnnouncementTile extends StatelessWidget {
+  final ProfilePalette palette;
+  final IconData icon;
+  final Color iconColor;
+  final String badgeText;
+  final String title;
+  final String body;
+  final String timeLabel;
+  final bool showBottomDivider;
+
+  const _AnnouncementTile({
+    required this.palette,
+    required this.icon,
+    required this.iconColor,
+    required this.badgeText,
+    required this.title,
+    required this.body,
+    required this.timeLabel,
+    required this.showBottomDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: showBottomDivider
+            ? Border(
+                bottom: BorderSide(color: palette.border, width: 1),
+              )
+            : null,
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: palette.iconBox,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      badgeText,
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                        color: iconColor,
+                      ),
+                    ),
+                    Text(
+                      timeLabel,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: palette.muted,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.15,
+                    color: palette.text,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  body,
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    height: 1.42,
+                    color: palette.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DynamicNotificationRow extends StatelessWidget {
+  final AppNotification item;
+  final ProfilePalette palette;
+  final bool showBottomDivider;
+  final VoidCallback onTap;
+
+  const _DynamicNotificationRow({
+    required this.item,
+    required this.palette,
+    required this.showBottomDivider,
+    required this.onTap,
+  });
+
+  IconData _iconForType(AppNotificationType type) {
+    switch (type) {
+      case AppNotificationType.match:
+      case AppNotificationType.goal:
+        return Icons.sports_soccer_rounded;
+      case AppNotificationType.news:
+        return Icons.newspaper_rounded;
+      case AppNotificationType.system:
+        return Icons.notifications_active_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: palette.cardPressed,
+        child: Container(
+          decoration: BoxDecoration(
+            border: showBottomDivider
+                ? Border(
+                    bottom: BorderSide(color: palette.border, width: 1),
+                  )
+                : null,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: palette.iconBox,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _iconForType(item.type),
+                  size: 19,
+                  color: palette.text,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: item.isRead
+                                  ? FontWeight.w500
+                                  : FontWeight.w600,
+                              color: palette.text,
+                            ),
+                          ),
+                        ),
+                        if (!item.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(left: 8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF4F9BF0),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.body,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: palette.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
